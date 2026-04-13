@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@inkbox/sdk": "^0.2.10"
+  }
+}

@@ -1,0 +1,80 @@
+"""Flask API for the React dashboard."""
+
+import os
+import json
+from flask import Flask, jsonify, send_from_directory, request
+from flask_cors import CORS
+from inkbox import Inkbox
+
+from config import INKBOX_API_KEY, VAULT_KEY
+from memory import VaultManager
+
+app = Flask(__name__, static_folder="dashboard")
+CORS(app)
+
+# Lazy-init Inkbox + Vault
+_inkbox = None
+_vault = None
+
+
+def get_vault():
+    global _inkbox, _vault
+    if _vault is None:
+        _inkbox = Inkbox(api_key=INKBOX_API_KEY)
+        _inkbox.__enter__()
+        _vault = VaultManager(_inkbox, VAULT_KEY)
+    return _vault
+
+
+@app.route("/")
+def index():
+    return send_from_directory("dashboard", "index.html")
+
+
+@app.route("/api/contacts")
+def get_contacts():
+    vault = get_vault()
+    contacts = vault.get_all_contacts()
+    return jsonify(contacts)
+
+
+@app.route("/api/contacts/<email>")
+def get_contact(email):
+    vault = get_vault()
+    contact = vault.get_contact(email)
+    if contact is None:
+        return jsonify({"error": "Contact not found"}), 404
+    return jsonify(contact)
+
+
+@app.route("/api/contacts/search")
+def search_contacts():
+    query = request.args.get("q", "")
+    vault = get_vault()
+    if not query:
+        return jsonify([])
+    results = vault.search_contacts(query)
+    return jsonify(results)
+
+
+@app.route("/api/stats")
+def get_stats():
+    vault = get_vault()
+    contacts = vault.get_all_contacts()
+    return jsonify({
+        "total": len(contacts),
+        "hot": len([c for c in contacts if c.get("warmth_score") == "hot"]),
+        "warm": len([c for c in contacts if c.get("warmth_score") == "warm"]),
+        "cold": len([c for c in contacts if c.get("warmth_score") == "cold"]),
+        "pending_followups": len(vault.get_stale_contacts()),
+        "sources": {
+            "inbound": len([c for c in contacts if c.get("source") == "inbound"]),
+            "outbound": len([c for c in contacts if c.get("source") == "outbound"]),
+            "agent": len([c for c in contacts if c.get("source") == "agent"]),
+        },
+    })
+
+
+if __name__ == "__main__":
+    print("Starting NetWork Dashboard API on http://localhost:5050")
+    app.run(host="0.0.0.0", port=5050, debug=True)

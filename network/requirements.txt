@@ -1,0 +1,7 @@
+inkbox
+langchain
+langchain-openai
+flask
+flask-cors
+python-dotenv
+openai
