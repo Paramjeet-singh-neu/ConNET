@@ -1,4 +1,4 @@
-"""NetWork — AI Networking Brain. Entry point."""
+"""ConNET — AI Networking Brain. Entry point."""
 
 import asyncio
 import json
@@ -92,7 +92,7 @@ async def main():
     agent = NetworkAgent()
 
     print(f"\n{'='*60}")
-    print("  NetWork — AI Networking Brain")
+    print("  ConNET — AI Networking Brain")
     print(f"{'='*60}")
     print(f"\nCommands:")
     print(f"  reach out to [name] at [company]  — Send personalized outreach")
@@ -109,7 +109,7 @@ async def main():
     try:
         while True:
             try:
-                command = input("NetWork > ").strip()
+                command = input("ConNET > ").strip()
             except EOFError:
                 break
 
@@ -117,7 +117,7 @@ async def main():
                 continue
 
             if command.lower() in ("quit", "exit", "q"):
-                print("Shutting down NetWork agent...")
+                print("Shutting down ConNET agent...")
                 break
 
             result = await agent.handle_command(command)

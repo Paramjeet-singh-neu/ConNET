@@ -61,7 +61,7 @@ class PhoneBriefing:
     def _send_email_briefing(self, script: str, activity: dict):
         """Send briefing as email (backup for phone)."""
         body = (
-            f"Daily NetWork Briefing\n"
+            f"Daily ConNET Briefing\n"
             f"{'=' * 40}\n\n"
             f"Script (what the phone call would say):\n"
             f"\"{script}\"\n\n"
@@ -76,7 +76,7 @@ class PhoneBriefing:
         try:
             self.identity.send_email(
                 to=[MY_EMAIL],
-                subject="NetWork: Daily Briefing",
+                subject="ConNET: Daily Briefing",
                 body_text=body,
             )
             print("  Briefing email sent!")

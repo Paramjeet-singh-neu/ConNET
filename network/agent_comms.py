@@ -44,7 +44,7 @@ class AgentCommunicator:
 
         self.agent_a.send_email(
             to=[target_agent_email],
-            subject="[Agent-to-Agent] NetWork Introduction",
+            subject="[Agent-to-Agent] ConNET Introduction",
             body_text=intro["response_to_agent"],
         )
 
@@ -96,7 +96,7 @@ class AgentCommunicator:
 
             msg_a = self.agent_a.send_email(
                 to=[agent_b.email_address],
-                subject="[Agent-to-Agent] NetWork Introduction",
+                subject="[Agent-to-Agent] ConNET Introduction",
                 body_text=intro["response_to_agent"],
             )
             print(f"  Sent! Message ID: {msg_a.id}")
@@ -112,7 +112,7 @@ class AgentCommunicator:
 
             msg_b = agent_b.send_email(
                 to=[self.agent_a.email_address],
-                subject="Re: [Agent-to-Agent] NetWork Introduction",
+                subject="Re: [Agent-to-Agent] ConNET Introduction",
                 body_text=response["response_to_agent"],
                 in_reply_to_message_id=msg_a.message_id,
             )
@@ -166,7 +166,7 @@ class AgentCommunicator:
             return _parse_llm_json(response.content)
         except json.JSONDecodeError:
             return {
-                "response_to_agent": "Hello! I'm NetWork, Paramjeet's AI networking agent. Paramjeet is an AI/ML Engineer at Northeastern, winner of the Voxel51 hackathon. Let's explore how our humans might connect!",
+                "response_to_agent": "Hello! I'm ConNET, Paramjeet's AI networking agent. Paramjeet is an AI/ML Engineer at Northeastern, winner of the Voxel51 hackathon. Let's explore how our humans might connect!",
                 "mutual_interests": ["AI/ML", "technology"],
                 "connection_reason": "Both involved in AI and technology",
                 "briefing_for_paramjeet": "Agent-to-agent connection initiated",
@@ -184,7 +184,7 @@ class AgentCommunicator:
         try:
             self.agent_a.send_email(
                 to=[MY_EMAIL],
-                subject="NetWork: New Agent-to-Agent Connection",
+                subject="ConNET: New Agent-to-Agent Connection",
                 body_text=briefing,
             )
         except Exception as e:

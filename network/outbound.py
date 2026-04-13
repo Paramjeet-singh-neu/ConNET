@@ -135,7 +135,7 @@ class OutboundAgent:
         try:
             self.identity.send_email(
                 to=[MY_EMAIL],
-                subject=f"NetWork: Outreach sent to {name} at {company}",
+                subject=f"ConNET: Outreach sent to {name} at {company}",
                 body_text=briefing,
             )
         except Exception as e:

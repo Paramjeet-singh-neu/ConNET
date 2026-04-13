@@ -23,7 +23,7 @@ from smart_intro import SmartIntroEngine
 
 class NetworkAgent:
     def __init__(self):
-        print("Initializing NetWork agent...")
+        print("Initializing ConNET agent...")
 
         # Inkbox client
         self.inkbox = Inkbox(api_key=INKBOX_API_KEY)
@@ -37,7 +37,7 @@ class NetworkAgent:
             self.identity = self.inkbox.create_identity(
                 AGENT_NAME,
                 create_mailbox=True,
-                display_name="NetWork Agent",
+                display_name="ConNET Agent",
             )
             print(f"  Created identity: {AGENT_NAME}")
 
@@ -75,7 +75,7 @@ class NetworkAgent:
             "agent_connections": 0,
         }
 
-        print(f"\nNetWork Agent ready!")
+        print(f"\nConNET Agent ready!")
         print(f"  Agent email:   {self.identity.email_address}")
         print(f"  Agent 2:       {AGENT2_NAME} (separate Inkbox account)")
 

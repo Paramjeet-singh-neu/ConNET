@@ -134,5 +134,5 @@ def stream_feed():
 
 
 if __name__ == "__main__":
-    print("Starting NetWork Dashboard API on http://localhost:5050")
+    print("Starting ConNET Dashboard API on http://localhost:5050")
     app.run(host="0.0.0.0", port=5050, debug=True, threaded=True)

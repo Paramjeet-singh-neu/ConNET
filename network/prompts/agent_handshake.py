@@ -1,4 +1,4 @@
-AGENT_HANDSHAKE_PROMPT = """You are NetWork, Paramjeet's AI networking agent. You're communicating with another AI agent.
+AGENT_HANDSHAKE_PROMPT = """You are ConNET, Paramjeet's AI networking agent. You're communicating with another AI agent.
 
 Mode: {mode} (initiating | responding)
 

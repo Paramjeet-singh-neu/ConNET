@@ -177,7 +177,7 @@ class InboundAgent:
         try:
             self.identity.send_email(
                 to=[MY_EMAIL],
-                subject=f"NetWork Alert: {priority.upper()} — {summary[:50]}",
+                subject=f"ConNET Alert: {priority.upper()} — {summary[:50]}",
                 body_text=briefing,
             )
         except Exception as e:
