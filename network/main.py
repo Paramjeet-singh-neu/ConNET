@@ -62,6 +62,22 @@ def print_result(result: dict):
             warmth = c.get("warmth_score", "?")
             print(f"    - {c['name']} ({c.get('company', '?')}) [{warmth}]")
 
+    elif status == "complete" and "matches_found" in result:
+        # Smart intro
+        print(f"\n  🤝 Smart Intros: {result['matches_found']} matches found, {result['intros_processed']} processed")
+        for r in result.get("results", []):
+            match = r.get("match", {})
+            email = r.get("email", {})
+            a = match.get("contact_a", {})
+            b = match.get("contact_b", {})
+            print(f"    {a.get('name', '?')} ↔ {b.get('name', '?')} (score: {match.get('match_score', '?')})")
+            print(f"      Reason: {match.get('reason', '?')}")
+            print(f"      Subject: {email.get('subject', '?')}")
+            print(f"      Status: {r.get('status', '?')}")
+
+    elif status == "no_matches":
+        print(f"\n  {result.get('message', 'No matches found.')}")
+
     elif status == "error":
         print(f"\n  ❌ Error: {result.get('error', 'Unknown error')}")
 
@@ -84,6 +100,7 @@ async def main():
     print(f"  follow up                         — Send follow-ups to stale contacts")
     print(f"  agent demo                        — Run agent-to-agent networking demo")
     print(f"  briefing                          — Get phone/email briefing")
+    print(f"  smart intro                        — Find contacts who should meet")
     print(f"  who did I meet at [venue]          — Search contacts by memory")
     print(f"  contacts                          — List all contacts")
     print(f"  stats                             — Show statistics")

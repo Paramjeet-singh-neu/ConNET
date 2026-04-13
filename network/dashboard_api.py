@@ -1,18 +1,18 @@
-"""Flask API for the React dashboard."""
+"""Flask API for the React dashboard — with SSE live feed and network graph data."""
 
-import os
 import json
-from flask import Flask, jsonify, send_from_directory, request
+import time
+from flask import Flask, jsonify, send_from_directory, request, Response
 from flask_cors import CORS
 from inkbox import Inkbox
 
 from config import INKBOX_API_KEY, VAULT_KEY
 from memory import VaultManager
+from live_feed import feed
 
 app = Flask(__name__, static_folder="dashboard")
 CORS(app)
 
-# Lazy-init Inkbox + Vault
 _inkbox = None
 _vault = None
 
@@ -34,8 +34,7 @@ def index():
 @app.route("/api/contacts")
 def get_contacts():
     vault = get_vault()
-    contacts = vault.get_all_contacts()
-    return jsonify(contacts)
+    return jsonify(vault.get_all_contacts())
 
 
 @app.route("/api/contacts/<email>")
@@ -53,8 +52,7 @@ def search_contacts():
     vault = get_vault()
     if not query:
         return jsonify([])
-    results = vault.search_contacts(query)
-    return jsonify(results)
+    return jsonify(vault.search_contacts(query))
 
 
 @app.route("/api/stats")
@@ -75,6 +73,66 @@ def get_stats():
     })
 
 
+@app.route("/api/graph")
+def get_graph():
+    """Return nodes and edges for the D3 force-directed network graph."""
+    vault = get_vault()
+    contacts = vault.get_all_contacts()
+
+    nodes = [{"id": "paramjeet", "name": "Paramjeet", "group": "self", "warmth": "self"}]
+    edges = []
+
+    for c in contacts:
+        node_id = c.get("email", c["id"])
+        nodes.append({
+            "id": node_id,
+            "name": c["name"],
+            "company": c.get("company", ""),
+            "group": c.get("source", "outbound"),
+            "warmth": c.get("warmth_score", "warm"),
+        })
+        edges.append({"source": "paramjeet", "target": node_id, "type": c.get("source", "outbound")})
+
+    # Add edges between contacts that share a company or venue
+    for i, a in enumerate(contacts):
+        for b in contacts[i + 1:]:
+            if a.get("company") and a.get("company") == b.get("company"):
+                edges.append({"source": a.get("email", a["id"]), "target": b.get("email", b["id"]), "type": "company"})
+            elif a.get("venue") and a.get("venue") == b.get("venue"):
+                edges.append({"source": a.get("email", a["id"]), "target": b.get("email", b["id"]), "type": "venue"})
+
+    return jsonify({"nodes": nodes, "edges": edges})
+
+
+@app.route("/api/feed")
+def get_feed():
+    """Return recent activity feed events."""
+    n = request.args.get("n", 20, type=int)
+    return jsonify(feed.recent(n))
+
+
+@app.route("/api/feed/stream")
+def stream_feed():
+    """SSE endpoint — streams live events to the dashboard."""
+    def generate():
+        q = feed.subscribe()
+        try:
+            while True:
+                if q:
+                    event = q.popleft()
+                    yield f"data: {json.dumps(event)}\n\n"
+                else:
+                    time.sleep(0.5)
+                    yield ": heartbeat\n\n"
+        except GeneratorExit:
+            feed.unsubscribe(q)
+
+    return Response(generate(), mimetype="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+    })
+
+
 if __name__ == "__main__":
     print("Starting NetWork Dashboard API on http://localhost:5050")
-    app.run(host="0.0.0.0", port=5050, debug=True)
+    app.run(host="0.0.0.0", port=5050, debug=True, threaded=True)

@@ -6,6 +6,7 @@ from langchain_core.messages import HumanMessage
 
 from config import MY_EMAIL
 from prompts.briefing_script import BRIEFING_PROMPT
+from live_feed import feed
 
 
 class PhoneBriefing:
@@ -26,6 +27,8 @@ class PhoneBriefing:
 
         # Step 3: Also send as email (backup / record)
         self._send_email_briefing(script, activity_summary)
+
+        feed.log_briefing("phone" if call_success else "email", script)
 
         return {
             "status": "called" if call_success else "email_only",

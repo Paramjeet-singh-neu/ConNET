@@ -6,6 +6,7 @@ from langchain_core.messages import HumanMessage
 
 from models.contact import calculate_next_followup
 from prompts.sentiment_score import SENTIMENT_PROMPT
+from live_feed import feed
 
 
 def _parse_llm_json(text: str) -> dict:
@@ -36,6 +37,8 @@ class SentimentAnalyzer:
             "next_follow_up": calculate_next_followup(wait_days),
             "warmth_score": scores["warmth"],
         })
+
+        feed.log_sentiment(sender, scores["warmth"], scores)
 
         print(f"    Sentiment: {scores['warmth']} (enthusiasm={scores['enthusiasm']}, specificity={scores['specificity']}, next_step={scores['next_step_signal']})")
         return scores

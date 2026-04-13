@@ -11,6 +11,7 @@ from langchain_core.messages import HumanMessage
 from config import MY_EMAIL, INKBOX_API_KEY_2, AGENT2_NAME
 from models.contact import create_contact
 from prompts.agent_handshake import AGENT_HANDSHAKE_PROMPT
+from live_feed import feed
 
 
 def _parse_llm_json(text: str) -> dict:
@@ -142,6 +143,12 @@ class AgentCommunicator:
                 "mutual_interests": response.get("mutual_interests", []),
                 "connection_reason": response.get("connection_reason", ""),
             }
+            feed.log_agent_comms(
+                self.agent_a.agent_handle,
+                agent_b.agent_handle,
+                response.get("connection_reason", ""),
+            )
+
             print("\n  Agent-to-agent demo complete!")
             return result
 

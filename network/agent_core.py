@@ -18,6 +18,7 @@ from sentiment import SentimentAnalyzer
 from followup import FollowUpEngine
 from agent_comms import AgentCommunicator
 from briefing import PhoneBriefing
+from smart_intro import SmartIntroEngine
 
 
 class NetworkAgent:
@@ -62,6 +63,7 @@ class NetworkAgent:
         self.followup = FollowUpEngine(self.identity, self.llm, self.vault)
         self.agent_comms = AgentCommunicator(self.identity, self.llm, self.vault)
         self.briefing = PhoneBriefing(self.identity, self.llm, self.vault, MY_PHONE)
+        self.smart_intro = SmartIntroEngine(self.identity, self.llm, self.vault)
 
         # Activity counters for briefings
         self.activity = {
@@ -115,6 +117,9 @@ class NetworkAgent:
         elif mode == "briefing":
             return await self.briefing.call_with_briefing(self.activity)
 
+        elif mode == "smart_intro":
+            return await self.smart_intro.run_smart_intros(auto_send=False)
+
         elif mode == "recall":
             query = intent.get("query", command)
             return self._handle_recall(query)
@@ -132,7 +137,7 @@ class NetworkAgent:
             return {"status": "info", "message": "Sentiment analysis runs automatically on inbound replies. Use 'check inbox' to process new emails."}
 
         else:
-            return {"status": "unknown", "message": f"I didn't understand that. Try: 'reach out to [name] at [company]', 'check inbox', 'follow up', 'agent demo', 'briefing', 'recall [query]', 'contacts', or 'stats'."}
+            return {"status": "unknown", "message": f"I didn't understand that. Try: 'reach out to [name] at [company]', 'check inbox', 'follow up', 'agent demo', 'briefing', 'smart intro', 'recall [query]', 'contacts', or 'stats'."}
 
     async def _parse_intent(self, command: str) -> dict:
         """Use LLM to classify user intent."""
@@ -148,6 +153,7 @@ Modes:
 - "contacts": User wants to see all contacts.
 - "stats": User wants activity statistics.
 - "sentiment": User wants sentiment analysis.
+- "smart_intro": User wants to find contacts who should be introduced to each other.
 
 Command: {command}
 
@@ -174,6 +180,8 @@ Fill empty strings for unused fields."""
                 return {"mode": "check_inbox", "name": "", "company": "", "email": "", "query": ""}
             elif any(w in cmd for w in ["follow", "stale"]):
                 return {"mode": "follow_up", "name": "", "company": "", "email": "", "query": ""}
+            elif any(w in cmd for w in ["intro", "introduce", "connect them", "match"]):
+                return {"mode": "smart_intro", "name": "", "company": "", "email": "", "query": ""}
             elif any(w in cmd for w in ["agent", "demo", "handshake"]):
                 return {"mode": "agent_demo", "name": "", "company": "", "email": "", "query": ""}
             elif any(w in cmd for w in ["brief", "call", "phone"]):

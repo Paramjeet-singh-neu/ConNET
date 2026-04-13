@@ -10,6 +10,7 @@ from langchain_core.messages import HumanMessage
 from config import MY_EMAIL
 from models.contact import create_contact
 from prompts.qualify import QUALIFY_PROMPT
+from live_feed import feed
 
 
 def _parse_llm_json(text: str) -> dict:
@@ -77,6 +78,13 @@ class InboundAgent:
 
             print(f"    Classification: {result['classification']} | Priority: {result['priority']}")
 
+            feed.log_inbound(
+                email_message["from"],
+                result["classification"],
+                result["priority"],
+                result.get("briefing_summary", ""),
+            )
+
             # Step 2: Smart reply (if needed)
             if result.get("reply_needed", False) and result["classification"] != "spam":
                 print(f"    Sending reply...")
@@ -86,6 +94,7 @@ class InboundAgent:
                     body=result.get("reply_body", ""),
                     in_reply_to=email_message.get("message_id"),
                 )
+                feed.log_reply_sent(email_message["from"], result["classification"])
 
             # Step 3: Store in vault (if not spam)
             if result["classification"] != "spam":

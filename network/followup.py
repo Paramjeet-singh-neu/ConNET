@@ -10,6 +10,7 @@ from langchain_core.messages import HumanMessage
 from models.contact import calculate_next_followup, days_since_last_contact
 from prompts.research import RESEARCH_PROMPT
 from prompts.followup_draft import FOLLOWUP_PROMPT
+from live_feed import feed
 
 
 def _parse_llm_json(text: str) -> dict:
@@ -91,6 +92,8 @@ class FollowUpEngine:
             wait = {"hot": 3, "warm": 7, "cold": 14}.get(contact.get("warmth_score", "warm"), 7)
             contact["next_follow_up"] = calculate_next_followup(wait)
             self.vault.store_contact(contact)
+
+            feed.log_followup(name, contact["follow_up_count"], email["subject"])
 
             print(f"    Sent follow-up #{contact['follow_up_count']} to {name}")
             return {"status": "sent", "contact": name, "email": email}

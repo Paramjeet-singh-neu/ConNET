@@ -11,6 +11,7 @@ from config import MY_EMAIL
 from models.contact import create_contact, calculate_next_followup
 from prompts.research import RESEARCH_PROMPT
 from prompts.email_draft import OUTREACH_EMAIL_PROMPT
+from live_feed import feed
 
 
 def _parse_llm_json(text: str) -> dict:
@@ -80,6 +81,9 @@ class OutboundAgent:
 
             # Step 6: Brief me
             self._send_briefing(name, company, email, research)
+
+            feed.log_outbound(name, company, email["subject"], email.get("angle_used", ""))
+            feed.log_vault_store(name, "outbound", "warm")
 
             print(f"  Done! Email sent to {to_email}")
             return {"status": "sent", "contact": contact, "email": email, "research": research}
