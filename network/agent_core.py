@@ -19,6 +19,7 @@ from followup import FollowUpEngine
 from agent_comms import AgentCommunicator
 from briefing import PhoneBriefing
 from smart_intro import SmartIntroEngine
+from conversation import ConversationRecall
 
 
 class NetworkAgent:
@@ -64,6 +65,7 @@ class NetworkAgent:
         self.agent_comms = AgentCommunicator(self.identity, self.llm, self.vault)
         self.briefing = PhoneBriefing(self.identity, self.llm, self.vault, MY_PHONE)
         self.smart_intro = SmartIntroEngine(self.identity, self.llm, self.vault)
+        self.conversation = ConversationRecall(self.identity, self.vault)
 
         # Activity counters for briefings
         self.activity = {
@@ -120,6 +122,14 @@ class NetworkAgent:
         elif mode == "smart_intro":
             return await self.smart_intro.run_smart_intros(auto_send=False)
 
+        elif mode == "conversation":
+            query = intent.get("query", command)
+            return self.conversation.get_conversation(query)
+
+        elif mode == "conversation_venue":
+            query = intent.get("query", command)
+            return self.conversation.get_all_conversations_by_venue(query)
+
         elif mode == "recall":
             query = intent.get("query", command)
             return self._handle_recall(query)
@@ -154,6 +164,8 @@ Modes:
 - "stats": User wants activity statistics.
 - "sentiment": User wants sentiment analysis.
 - "smart_intro": User wants to find contacts who should be introduced to each other.
+- "conversation": User wants to see their past email conversation with a specific person. Extract "query" (the person's name or keyword).
+- "conversation_venue": User wants to see all conversations from a specific event/venue. Extract "query" (the venue name).
 
 Command: {command}
 
@@ -186,6 +198,8 @@ Fill empty strings for unused fields."""
                 return {"mode": "agent_demo", "name": "", "company": "", "email": "", "query": ""}
             elif any(w in cmd for w in ["brief", "call", "phone"]):
                 return {"mode": "briefing", "name": "", "company": "", "email": "", "query": ""}
+            elif any(w in cmd for w in ["convo", "conversation", "talked", "discussed", "said to", "emailed"]):
+                return {"mode": "conversation", "name": "", "company": "", "email": "", "query": command}
             elif any(w in cmd for w in ["who", "find", "search", "recall", "remember"]):
                 return {"mode": "recall", "name": "", "company": "", "email": "", "query": command}
             elif any(w in cmd for w in ["contacts", "list", "all"]):

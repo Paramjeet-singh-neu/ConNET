@@ -39,6 +39,30 @@ def print_result(result: dict):
     elif status in ("called", "email_only"):
         print(f"\n  ✅ Briefing {'called + emailed' if status == 'called' else 'emailed (phone unavailable)'}")
 
+    elif status == "found" and "conversations" in result:
+        # Conversation recall
+        convos = result.get("conversations", [])
+        venue = result.get("venue")
+        if venue:
+            print(f"\n  📍 Conversations from: {venue}")
+        print(f"  Found {len(convos)} conversation(s):\n")
+        for convo in convos:
+            c = convo["contact"]
+            msgs = convo["messages"]
+            print(f"  ── {c['name']} ({c['company']}) [{c['warmth']}] ──")
+            print(f"     Met: {c.get('venue', '?')} on {c.get('date_met', '?')}")
+            print(f"     Notes: {c.get('context_notes', '')[:80]}")
+            if msgs:
+                print(f"     {len(msgs)} message(s):")
+                for m in msgs:
+                    direction = "→" if "outbound" in str(m.get("direction", "")).lower() else "←"
+                    body_preview = m["body"][:120].replace("\n", " ")
+                    print(f"       {direction} [{m['date'][:10]}] {m['subject']}")
+                    print(f"         {body_preview}...")
+            else:
+                print(f"     (no email messages found in Inkbox — contact was stored from vault)")
+            print()
+
     elif status == "found":
         contacts = result.get("contacts", [])
         print(f"\n  Found {len(contacts)} contact(s):")
@@ -101,6 +125,8 @@ async def main():
     print(f"  agent demo                        — Run agent-to-agent networking demo")
     print(f"  briefing                          — Get phone/email briefing")
     print(f"  smart intro                        — Find contacts who should meet")
+    print(f"  convo [name]                       — Recall conversation with someone")
+    print(f"  convo at [venue]                   — All conversations from an event")
     print(f"  who did I meet at [venue]          — Search contacts by memory")
     print(f"  contacts                          — List all contacts")
     print(f"  stats                             — Show statistics")

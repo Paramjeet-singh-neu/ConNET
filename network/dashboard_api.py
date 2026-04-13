@@ -46,6 +46,30 @@ def get_contact(email):
     return jsonify(contact)
 
 
+@app.route("/api/conversation")
+def get_conversation():
+    from conversation import ConversationRecall
+    query = request.args.get("q", "")
+    vault = get_vault()
+    if not query:
+        return jsonify({"status": "error", "message": "Provide ?q=name or ?q=venue"})
+    recall = ConversationRecall(_get_identity(), vault)
+    return jsonify(recall.get_conversation(query))
+
+
+def _get_identity():
+    from config import AGENT_NAME
+    inkbox = _get_inkbox()
+    return inkbox.get_identity(AGENT_NAME)
+
+
+def _get_inkbox():
+    global _inkbox
+    if _inkbox is None:
+        get_vault()
+    return _inkbox
+
+
 @app.route("/api/contacts/search")
 def search_contacts():
     query = request.args.get("q", "")
