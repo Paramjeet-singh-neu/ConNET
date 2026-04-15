@@ -4,7 +4,6 @@
 
 Built with **Inkbox SDK** (Email + Vault + Phone) | **LangChain + GPT-4o** | **Flask + React + D3.js**
 
-Hackathon project for [Hack-a-Sprint 2026](https://cursor.com/hack-a-sprint)
 
 ---
 
@@ -165,7 +164,6 @@ network/
 
 **Paramjeet Singh**
 - AI/ML Engineer | MS in Information Systems, Northeastern University '26
-- Won Grand Prize at Voxel51 x Twelve Labs Hackathon (CoachMe+)
 - 3+ years building LLM pipelines, RAG systems, and agentic AI in production
 
 [LinkedIn](https://linkedin.com/in/paramjeetsingh31) | [GitHub](https://github.com/Paramjeet-singh-neu)
