@@ -7,6 +7,25 @@ Built with **Inkbox SDK** (Email + Vault + Phone) | **LangChain + GPT-4o** | **F
 
 ---
 
+## Screenshots
+
+### Network Graph
+Interactive D3.js force-directed visualization — you at the center (purple), contacts color-coded by warmth.
+
+![Network Graph](assets/network-graph.png)
+
+### Contacts Dashboard
+Contact cards with warmth badges, outreach timelines, tags, and follow-up schedules.
+
+![Contacts Dashboard](assets/contacts.png)
+
+### Agent CLI
+Natural language commands to trigger outbound outreach, inbox checks, agent demos, and more.
+
+![Agent CLI](assets/cli.png)
+
+---
+
 ## The Problem
 
 Networking is a full-time job. You meet people at events, exchange emails, forget to follow up, lose context on conversations, and miss connections between people in your own network. No tool handles the complete lifecycle.
@@ -45,6 +64,60 @@ Three-tab real-time dashboard:
 
 ### 8. Daily Briefings
 Generates a spoken briefing script and sends a summary email covering all agent activity — new contacts, hot leads, follow-ups sent, and agent connections.
+
+---
+
+## Architecture
+
+```
+                    ┌─────────────────────────────────────────────┐
+                    │              ConNET Agent CLI                │
+                    │              (main.py)                       │
+                    └──────────────────┬──────────────────────────┘
+                                       │
+                    ┌──────────────────▼──────────────────────────┐
+                    │           Agent Core (Orchestrator)          │
+                    │           Intent parsing + routing           │
+                    └──┬───┬───┬───┬───┬───┬───┬───┬─────────────┘
+                       │   │   │   │   │   │   │   │
+          ┌────────────┘   │   │   │   │   │   │   └────────────┐
+          ▼                ▼   │   ▼   │   ▼   │                ▼
+    ┌──────────┐   ┌─────────┐│ ┌─────┐│ ┌─────┐│   ┌───────────────┐
+    │ Outbound │   │ Inbound ││ │Smart││ │Convo││   │   Briefing    │
+    │ Research │   │Classify ││ │Intro││ │Recall││   │  Phone/Email  │
+    │  Draft   │   │  Reply  ││ │Match││ │Thread││   │    TTS        │
+    │  Send    │   │  Store  ││ │Draft││ │Fetch ││   └───────────────┘
+    └──────────┘   └─────────┘│ └─────┘│ └─────┘│
+                              │        │        │
+                    ┌─────────▼┐ ┌─────▼────┐ ┌─▼──────────┐
+                    │ Sentiment│ │ Follow-up │ │ Agent-to-  │
+                    │ Analysis │ │  Engine   │ │   Agent    │
+                    │ hot/warm │ │ Re-research│ │ 2 Inkbox  │
+                    │  /cold   │ │ Threaded  │ │ Identities│
+                    └──────────┘ └──────────┘ └────────────┘
+                              │        │        │
+          ┌───────────────────┼────────┼────────┘
+          ▼                   ▼        ▼
+    ┌──────────────────────────────────────────────┐
+    │              Inkbox SDK Layer                  │
+    │  ┌─────────┐  ┌──────────┐  ┌──────────┐    │
+    │  │  Email   │  │  Vault   │  │  Phone   │    │
+    │  │Send/Recv │  │Encrypted │  │Calls/TTS │    │
+    │  │Threading │  │  CRM     │  │Transcripts│   │
+    │  └─────────┘  └──────────┘  └──────────┘    │
+    └──────────────────────────────────────────────┘
+          │                   │
+          ▼                   ▼
+    ┌──────────────┐   ┌───────────────────────────┐
+    │  LangChain   │   │     Live Dashboard         │
+    │  + GPT-4o    │   │  ┌────────┬───────┬──────┐│
+    │  7 Prompt    │   │  │Live    │Network│Cards ││
+    │  Templates   │   │  │Feed   │Graph  │View  ││
+    └──────────────┘   │  │(SSE)  │(D3.js)│      ││
+                       │  └────────┴───────┴──────┘│
+                       │  Flask API + React/Tailwind│
+                       └───────────────────────────┘
+```
 
 ---
 
@@ -103,7 +176,7 @@ stats                               Show statistics
 
 ---
 
-## Architecture
+## File Structure
 
 ```
 network/
@@ -123,15 +196,7 @@ network/
 ├── dashboard/index.html   React + D3.js single-page dashboard
 ├── config.py              Environment config
 ├── models/contact.py      Contact data model
-├── prompts/               7 LLM prompt templates
-│   ├── research.py        Person research
-│   ├── email_draft.py     Outreach drafting
-│   ├── qualify.py         Inbound classification
-│   ├── sentiment_score.py Sentiment analysis
-│   ├── followup_draft.py  Follow-up drafting
-│   ├── agent_handshake.py Agent-to-agent protocol
-│   └── briefing_script.py Phone briefing script
-└── requirements.txt
+└── prompts/               7 LLM prompt templates
 ```
 
 ---
