@@ -12,17 +12,20 @@ Built with **Inkbox SDK** (Email + Vault + Phone) | **LangChain + GPT-4o** | **F
 ### Network Graph
 Interactive D3.js force-directed visualization — you at the center (purple), contacts color-coded by warmth.
 
-![Network Graph](assets/network-graph.png)
+<img width="1470" height="826" alt="Screenshot 2026-04-15 at 12 16 30 AM" src="https://github.com/user-attachments/assets/543819ce-71aa-4e88-8ed8-cddad6a66eee" />
+
 
 ### Contacts Dashboard
 Contact cards with warmth badges, outreach timelines, tags, and follow-up schedules.
 
-![Contacts Dashboard](assets/contacts.png)
+<img width="1470" height="826" alt="Screenshot 2026-04-15 at 12 16 59 AM" src="https://github.com/user-attachments/assets/4c9f11d7-50f3-4f6c-9bbf-c2f403d07560" />
+
 
 ### Agent CLI
 Natural language commands to trigger outbound outreach, inbox checks, agent demos, and more.
 
-![Agent CLI](assets/cli.png)
+<img width="1470" height="849" alt="Screenshot 2026-04-15 at 12 42 54 AM" src="https://github.com/user-attachments/assets/a5ba9167-d093-4455-ac8b-d54016d1d4ab" />
+
 
 ---
 
