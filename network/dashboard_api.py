@@ -1,7 +1,9 @@
 """Flask API for the React dashboard — with SSE live feed and network graph data."""
 
+import os
 import json
 import time
+from functools import wraps
 from flask import Flask, jsonify, send_from_directory, request, Response
 from flask_cors import CORS
 from inkbox import Inkbox
@@ -12,6 +14,25 @@ from live_feed import feed
 
 app = Flask(__name__, static_folder="dashboard")
 CORS(app)
+
+# Optional basic auth for production
+DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "")
+
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not DASHBOARD_PASSWORD:
+            return f(*args, **kwargs)
+        auth = request.authorization
+        if not auth or auth.password != DASHBOARD_PASSWORD:
+            return Response(
+                "Authentication required",
+                401,
+                {"WWW-Authenticate": 'Basic realm="ConNET Dashboard"'},
+            )
+        return f(*args, **kwargs)
+    return decorated
 
 _inkbox = None
 _vault = None
@@ -27,17 +48,25 @@ def get_vault():
 
 
 @app.route("/")
+@require_auth
 def index():
     return send_from_directory("dashboard", "index.html")
 
 
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok", "service": "ConNET Dashboard"})
+
+
 @app.route("/api/contacts")
+@require_auth
 def get_contacts():
     vault = get_vault()
     return jsonify(vault.get_all_contacts())
 
 
 @app.route("/api/contacts/<email>")
+@require_auth
 def get_contact(email):
     vault = get_vault()
     contact = vault.get_contact(email)
@@ -47,6 +76,7 @@ def get_contact(email):
 
 
 @app.route("/api/conversation")
+@require_auth
 def get_conversation():
     from conversation import ConversationRecall
     query = request.args.get("q", "")
@@ -71,6 +101,7 @@ def _get_inkbox():
 
 
 @app.route("/api/contacts/search")
+@require_auth
 def search_contacts():
     query = request.args.get("q", "")
     vault = get_vault()
@@ -80,6 +111,7 @@ def search_contacts():
 
 
 @app.route("/api/stats")
+@require_auth
 def get_stats():
     vault = get_vault()
     contacts = vault.get_all_contacts()
@@ -98,6 +130,7 @@ def get_stats():
 
 
 @app.route("/api/graph")
+@require_auth
 def get_graph():
     """Return nodes and edges for the D3 force-directed network graph."""
     vault = get_vault()
@@ -129,6 +162,7 @@ def get_graph():
 
 
 @app.route("/api/feed")
+@require_auth
 def get_feed():
     """Return recent activity feed events."""
     n = request.args.get("n", 20, type=int)
@@ -136,6 +170,7 @@ def get_feed():
 
 
 @app.route("/api/feed/stream")
+@require_auth
 def stream_feed():
     """SSE endpoint — streams live events to the dashboard."""
     def generate():
@@ -158,5 +193,7 @@ def stream_feed():
 
 
 if __name__ == "__main__":
-    print("Starting ConNET Dashboard API on http://localhost:5050")
-    app.run(host="0.0.0.0", port=5050, debug=True, threaded=True)
+    port = int(os.getenv("PORT", 5050))
+    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    print(f"Starting ConNET Dashboard API on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)
