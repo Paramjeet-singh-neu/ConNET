@@ -4,6 +4,12 @@ From: {sender_email}
 Subject: {subject}
 Body: {body}
 
+Org address book (Inkbox Contacts reverse-lookup — prefer these names/companies over guessing from the From header alone):
+{org_contacts}
+
+Inkbox Notes visible to this agent (snippets from search on sender email / domain — use as relationship context):
+{org_notes}
+
 Step 1 — Classify: "recruiter" | "founder" | "networking" | "agent" | "spam"
 Step 2 — Priority: "hot" | "warm" | "cold"
 Step 3 — Draft reply:

@@ -7,10 +7,11 @@ from datetime import date
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-from config import MY_EMAIL
+from config import MY_EMAIL, CONNET_ORG_CONTEXT, CONNET_AUTO_NOTE_HOT_INBOUND
 from models.contact import create_contact
 from prompts.qualify import QUALIFY_PROMPT
 from live_feed import feed
+from org_context import gather_inbound_org_context
 
 
 def _parse_llm_json(text: str) -> dict:
@@ -23,10 +24,11 @@ def _parse_llm_json(text: str) -> dict:
 
 
 class InboundAgent:
-    def __init__(self, inkbox_identity, llm: ChatOpenAI, vault_manager):
+    def __init__(self, inkbox_identity, llm: ChatOpenAI, vault_manager, inkbox_client=None):
         self.identity = inkbox_identity
         self.llm = llm
         self.vault = vault_manager
+        self.inkbox = inkbox_client
 
     async def check_inbox(self) -> list[dict]:
         """Poll inbox for unread emails and process each one."""
@@ -69,11 +71,19 @@ class InboundAgent:
     async def process_email(self, email_message: dict) -> dict:
         """Full inbound flow: classify -> reply -> store -> brief."""
         try:
+            org_contacts, org_notes = await gather_inbound_org_context(
+                self.inkbox,
+                self.identity.id,
+                email_message["from"],
+                CONNET_ORG_CONTEXT,
+            )
             # Step 1: Classify
             result = await self._qualify(
                 sender_email=email_message["from"],
                 subject=email_message["subject"],
                 body=email_message["body"],
+                org_contacts=org_contacts,
+                org_notes=org_notes,
             )
 
             print(f"    Classification: {result['classification']} | Priority: {result['priority']}")
@@ -122,18 +132,36 @@ class InboundAgent:
             if result.get("priority") in ["hot", "warm"]:
                 self._send_briefing(email_message["from"], result)
 
+            if (
+                CONNET_AUTO_NOTE_HOT_INBOUND
+                and self.inkbox is not None
+                and result.get("priority") == "hot"
+                and result.get("classification") != "spam"
+            ):
+                await self._maybe_log_hot_note(email_message, result)
+
             return result
 
         except Exception as e:
             print(f"    Error processing email: {e}")
             return {"classification": "error", "priority": "cold", "error": str(e)}
 
-    async def _qualify(self, sender_email: str, subject: str, body: str) -> dict:
+    async def _qualify(
+        self,
+        sender_email: str,
+        subject: str,
+        body: str,
+        *,
+        org_contacts: str = "(none)",
+        org_notes: str = "(none)",
+    ) -> dict:
         """Classify and draft reply using LLM."""
         prompt = QUALIFY_PROMPT.format(
             sender_email=sender_email,
             subject=subject,
             body=body,
+            org_contacts=org_contacts,
+            org_notes=org_notes,
         )
         response = await self.llm.ainvoke([HumanMessage(content=prompt)])
         try:
@@ -182,3 +210,21 @@ class InboundAgent:
             )
         except Exception as e:
             print(f"    Warning: Could not send briefing: {e}")
+
+    async def _maybe_log_hot_note(self, email_message: dict, result: dict) -> None:
+        """Persist a short Inkbox org note for hot inbound (opt-in via CONNET_AUTO_NOTE_HOT_INBOUND)."""
+        title = f"Inbound HOT: {email_message.get('subject', '')[:80]}"
+        body = (
+            f"From: {email_message['from']}\n"
+            f"Classification: {result.get('classification')}\n"
+            f"Summary: {result.get('briefing_summary', '')}\n"
+            f"Reply drafted: {bool(result.get('reply_needed'))}\n"
+        )
+
+        def _create():
+            return self.inkbox.notes.create(title=title, body=body[:95000])
+
+        try:
+            await asyncio.to_thread(_create)
+        except Exception as e:
+            print(f"    Warning: could not create Inkbox note: {e}")

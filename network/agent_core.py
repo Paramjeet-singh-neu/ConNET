@@ -59,7 +59,7 @@ class NetworkAgent:
 
         # Sub-agents
         self.outbound = OutboundAgent(self.identity, self.llm, self.vault)
-        self.inbound = InboundAgent(self.identity, self.llm, self.vault)
+        self.inbound = InboundAgent(self.identity, self.llm, self.vault, inkbox=self.inkbox)
         self.sentiment = SentimentAnalyzer(self.llm, self.vault)
         self.followup = FollowUpEngine(self.identity, self.llm, self.vault)
         self.agent_comms = AgentCommunicator(self.identity, self.llm, self.vault)
@@ -138,6 +138,9 @@ class NetworkAgent:
             contacts = self.vault.get_all_contacts()
             return {"status": "ok", "count": len(contacts), "contacts": contacts}
 
+        elif mode == "import_vcards":
+            return await self._run_import_vcards(intent.get("path", "").strip())
+
         elif mode == "stats":
             return self._get_stats()
 
@@ -147,7 +150,7 @@ class NetworkAgent:
             return {"status": "info", "message": "Sentiment analysis runs automatically on inbound replies. Use 'check inbox' to process new emails."}
 
         else:
-            return {"status": "unknown", "message": f"I didn't understand that. Try: 'reach out to [name] at [company]', 'check inbox', 'follow up', 'agent demo', 'briefing', 'smart intro', 'recall [query]', 'contacts', or 'stats'."}
+            return {"status": "unknown", "message": f"I didn't understand that. Try: 'reach out to [name] at [company]', 'check inbox', 'follow up', 'agent demo', 'briefing', 'smart intro', 'recall [query]', 'contacts', 'import vcards /path/file.vcf', or 'stats'."}
 
     async def _parse_intent(self, command: str) -> dict:
         """Use LLM to classify user intent."""
@@ -166,10 +169,11 @@ Modes:
 - "smart_intro": User wants to find contacts who should be introduced to each other.
 - "conversation": User wants to see their past email conversation with a specific person. Extract "query" (the person's name or keyword).
 - "conversation_venue": User wants to see all conversations from a specific event/venue. Extract "query" (the venue name).
+- "import_vcards": User wants to bulk-import contacts from a vCard file. Extract "path" (absolute or relative path to a .vcf file).
 
 Command: {command}
 
-Return ONLY valid JSON: {{"mode": "...", "name": "...", "company": "...", "email": "...", "query": "..."}}
+Return ONLY valid JSON: {{"mode": "...", "name": "...", "company": "...", "email": "...", "query": "...", "path": "..."}}
 Fill empty strings for unused fields."""
 
         try:
@@ -187,27 +191,36 @@ Fill empty strings for unused fields."""
                 parts = command.split(" at ")
                 name = parts[0].replace("reach out to", "").replace("email", "").replace("send to", "").strip()
                 company = parts[1].strip() if len(parts) > 1 else ""
-                return {"mode": "outbound", "name": name, "company": company, "email": "", "query": ""}
+                return {"mode": "outbound", "name": name, "company": company, "email": "", "query": "", "path": ""}
             elif any(w in cmd for w in ["inbox", "check", "inbound"]):
-                return {"mode": "check_inbox", "name": "", "company": "", "email": "", "query": ""}
+                return {"mode": "check_inbox", "name": "", "company": "", "email": "", "query": "", "path": ""}
             elif any(w in cmd for w in ["follow", "stale"]):
-                return {"mode": "follow_up", "name": "", "company": "", "email": "", "query": ""}
+                return {"mode": "follow_up", "name": "", "company": "", "email": "", "query": "", "path": ""}
             elif any(w in cmd for w in ["intro", "introduce", "connect them", "match"]):
-                return {"mode": "smart_intro", "name": "", "company": "", "email": "", "query": ""}
+                return {"mode": "smart_intro", "name": "", "company": "", "email": "", "query": "", "path": ""}
             elif any(w in cmd for w in ["agent", "demo", "handshake"]):
-                return {"mode": "agent_demo", "name": "", "company": "", "email": "", "query": ""}
+                return {"mode": "agent_demo", "name": "", "company": "", "email": "", "query": "", "path": ""}
             elif any(w in cmd for w in ["brief", "call", "phone"]):
-                return {"mode": "briefing", "name": "", "company": "", "email": "", "query": ""}
+                return {"mode": "briefing", "name": "", "company": "", "email": "", "query": "", "path": ""}
             elif any(w in cmd for w in ["convo", "conversation", "talked", "discussed", "said to", "emailed"]):
-                return {"mode": "conversation", "name": "", "company": "", "email": "", "query": command}
+                return {"mode": "conversation", "name": "", "company": "", "email": "", "query": command, "path": ""}
             elif any(w in cmd for w in ["who", "find", "search", "recall", "remember"]):
-                return {"mode": "recall", "name": "", "company": "", "email": "", "query": command}
+                return {"mode": "recall", "name": "", "company": "", "email": "", "query": command, "path": ""}
+            elif "vcard" in cmd or "import vcards" in cmd or ".vcf" in cmd:
+                rest = command.strip()
+                low = rest.lower()
+                for prefix in ("import vcards", "import vcard", "vcard import", "vcards import"):
+                    if low.startswith(prefix):
+                        rest = rest[len(prefix) :].strip()
+                        break
+                path = rest.strip().strip('"').strip("'")
+                return {"mode": "import_vcards", "name": "", "company": "", "email": "", "query": "", "path": path}
             elif any(w in cmd for w in ["contacts", "list", "all"]):
-                return {"mode": "contacts", "name": "", "company": "", "email": "", "query": ""}
+                return {"mode": "contacts", "name": "", "company": "", "email": "", "query": "", "path": ""}
             elif any(w in cmd for w in ["stats", "summary", "count"]):
-                return {"mode": "stats", "name": "", "company": "", "email": "", "query": ""}
+                return {"mode": "stats", "name": "", "company": "", "email": "", "query": "", "path": ""}
             else:
-                return {"mode": "unknown", "name": "", "company": "", "email": "", "query": ""}
+                return {"mode": "unknown", "name": "", "company": "", "email": "", "query": "", "path": ""}
 
     def _handle_recall(self, query: str) -> dict:
         """Search vault for contacts matching a query."""
@@ -236,6 +249,34 @@ Fill empty strings for unused fields."""
             "cold": len(cold),
             "pending_followups": len(stale),
             "session_activity": self.activity,
+        }
+
+    async def _run_import_vcards(self, path: str) -> dict:
+        """Bulk-import org contacts from a vCard file via Inkbox."""
+        from pathlib import Path
+
+        if not path:
+            return {"status": "error", "error": "Usage: import vcards /path/to/contacts.vcf"}
+        p = Path(path).expanduser()
+        if not p.is_file():
+            return {"status": "error", "error": f"Not a file: {p}"}
+
+        data = await asyncio.to_thread(p.read_bytes)
+
+        def _import():
+            return self.inkbox.contacts.vcards.import_vcards(data)
+
+        try:
+            res = await asyncio.to_thread(_import)
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+        err_samples = [{"index": e.index, "error": e.error} for e in res.errors[:15]]
+        return {
+            "status": "imported",
+            "created_count": res.created_count,
+            "error_count": res.error_count,
+            "sample_errors": err_samples,
         }
 
     def shutdown(self):

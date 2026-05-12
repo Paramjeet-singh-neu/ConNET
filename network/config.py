@@ -14,3 +14,14 @@ INKBOX_API_KEY_2 = os.getenv("INKBOX_API_KEY_2")
 OPENAI_MODEL = "gpt-4o"
 MAX_FOLLOW_UPS = 3
 FOLLOW_UP_DAYS = 7
+
+# Inkbox org Contacts + Notes (SDK 0.3+)
+CONNET_ORG_CONTEXT = os.getenv("CONNET_ORG_CONTEXT", "true").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+CONNET_AUTO_NOTE_HOT_INBOUND = os.getenv(
+    "CONNET_AUTO_NOTE_HOT_INBOUND", "false",
+).strip().lower() in {"1", "true", "yes", "on"}

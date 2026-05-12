@@ -102,6 +102,14 @@ def print_result(result: dict):
     elif status == "no_matches":
         print(f"\n  {result.get('message', 'No matches found.')}")
 
+    elif status == "imported":
+        print(
+            f"\n  ✅ vCard import: created {result.get('created_count', 0)}, "
+            f"errors {result.get('error_count', 0)}"
+        )
+        for err in result.get("sample_errors") or []:
+            print(f"    - card {err.get('index', '?')}: {err.get('error', '?')}")
+
     elif status == "error":
         print(f"\n  ❌ Error: {result.get('error', 'Unknown error')}")
 
@@ -129,6 +137,7 @@ async def main():
     print(f"  convo at [venue]                   — All conversations from an event")
     print(f"  who did I meet at [venue]          — Search contacts by memory")
     print(f"  contacts                          — List all contacts")
+    print(f"  import vcards /path/to/file.vcf   — Bulk-import Inkbox org contacts")
     print(f"  stats                             — Show statistics")
     print(f"  quit                              — Exit\n")
 

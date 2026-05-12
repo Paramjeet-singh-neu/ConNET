@@ -204,6 +204,7 @@ network/
 ├── main.py               Entry point — interactive CLI
 ├── run_inkbox_gateway.py  Inkbox tunnel + webhooks + phone WS (vendored sample + ConNET hooks)
 ├── connet_webhook_hook.py Webhook → InboundAgent bridge for mail / SMS logging
+├── org_context.py         Inkbox org Contacts + Notes context for inbound qualify
 ├── agent_core.py          Orchestrator — intent routing to all modes
 ├── outbound.py            Research + personalized email + send
 ├── inbound.py             Inbox polling + classification + smart reply
@@ -234,6 +235,7 @@ network/
 | **Email — Receive** | Inbox polling (`check inbox`), or real-time **webhooks** via `run_inkbox_gateway.py` + `connet_webhook_hook.py` |
 | **Email — Threading** | Follow-ups in same thread, conversation recall with full bodies |
 | **Vault** | Encrypted CRM storing contacts with warmth scores, outreach history, and follow-up schedules |
+| **Org Contacts / Notes** | Reverse-lookup + note search enrich inbound classification (`org_context.py`); vCard import via `import vcards …` (Inkbox SDK 0.3+) |
 | **Phone** | Daily briefing calls; optional **vendored gateway** answers live inbound calls (Inkbox STT/TTS + sample agent) |
 | **Identity** | Two separate agent identities for agent-to-agent networking demo |
 

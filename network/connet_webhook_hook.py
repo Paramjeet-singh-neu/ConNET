@@ -88,17 +88,30 @@ async def _handle_mail(payload: MailWebhookPayload) -> None:
 
 async def _handle_sms(payload: PhoneIncomingTextWebhookPayload) -> None:
     t = payload.data.text_message
+    agent = await _get_agent()
+    from org_context import lookup_phone_contacts
+
+    matches = await asyncio.to_thread(lookup_phone_contacts, agent.inkbox, t.remote_phone_number)
+    match_hint = ""
+    if matches:
+        c0 = matches[0]
+        name = c0.preferred_name or f"{c0.given_name or ''} {c0.family_name or ''}".strip() or "Unknown"
+        match_hint = f" | Org contact: {name}"
+        if c0.company_name:
+            match_hint += f" ({c0.company_name})"
+
     feed.push(
         "sms",
         {
             "icon": "📱",
-            "title": f"SMS from {t.remote_phone_number}",
+            "title": f"SMS from {t.remote_phone_number}{match_hint}",
             "detail": (t.text or "")[:200],
             "meta": t.local_phone_number,
         },
     )
     logger.info(
-        "ConNET: inbound SMS from=%s to=%s",
+        "ConNET: inbound SMS from=%s to=%s org_matches=%s",
         t.remote_phone_number,
         t.local_phone_number,
+        len(matches),
     )
