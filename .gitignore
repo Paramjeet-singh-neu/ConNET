@@ -4,3 +4,7 @@ __pycache__/
 .env
 node_modules/
 .DS_Store
+
+# Inkbox sample gateway (vendored) runtime artifacts
+vendor/inkbox-sample-client-server/payloads/
+vendor/inkbox-sample-client-server/.inkbox-tunnel-state/

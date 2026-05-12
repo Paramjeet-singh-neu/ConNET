@@ -160,6 +160,24 @@ python dashboard_api.py
 # Open http://localhost:5050
 ```
 
+### Real-time webhooks, SMS, and live phone (optional)
+
+ConNET vendors the [Inkbox sample client/server](https://github.com/inkbox-ai/sample-client-server) under `vendor/inkbox-sample-client-server/`. Running it gives you:
+
+- **`POST /webhook`** — signed mail, SMS, and incoming-call webhooks (same endpoint as upstream).
+- **`WebSocket /phone/media/ws`** — live calls with Inkbox STT/TTS and the sample phone agent.
+- **Inkbox tunnel** — bootstrap patches your identity’s mailbox and phone number to the tunnel hostname (see the vendor `README.md`).
+
+Install gateway dependencies, add signing key + tunnel name to `.env`, then start the gateway from `network/`:
+
+```bash
+pip install -r requirements.txt -r requirements-inkbox-gateway.txt
+# .env: INKBOX_SIGNING_KEY, INKBOX_TUNNEL_NAME (plus existing INKBOX_API_KEY, OPENAI_API_KEY, …)
+python run_inkbox_gateway.py
+```
+
+With `CONNET_WEBHOOK_INTEGRATION` enabled (the default when using `run_inkbox_gateway.py`), inbound **`message.received`** mail webhooks run the same classify / reply / vault flow as `check inbox` in the CLI. Inbound SMS is logged to the live feed; you can extend `connet_webhook_hook.py` to automate replies. The CLI `check inbox` path remains useful for local testing without the tunnel. The upstream sample targets **Python 3.12+**; use a 3.12+ venv if the gateway fails to install on older Python.
+
 ---
 
 ## CLI Commands
@@ -184,6 +202,8 @@ stats                               Show statistics
 ```
 network/
 ├── main.py               Entry point — interactive CLI
+├── run_inkbox_gateway.py  Inkbox tunnel + webhooks + phone WS (vendored sample + ConNET hooks)
+├── connet_webhook_hook.py Webhook → InboundAgent bridge for mail / SMS logging
 ├── agent_core.py          Orchestrator — intent routing to all modes
 ├── outbound.py            Research + personalized email + send
 ├── inbound.py             Inbox polling + classification + smart reply
@@ -198,6 +218,8 @@ network/
 ├── dashboard_api.py       Flask API + SSE endpoints
 ├── dashboard/index.html   React + D3.js single-page dashboard
 ├── config.py              Environment config
+├── requirements.txt       Core Python dependencies
+├── requirements-inkbox-gateway.txt  Optional: vendored Inkbox webhook + phone server
 ├── models/contact.py      Contact data model
 └── prompts/               7 LLM prompt templates
 ```
@@ -209,10 +231,10 @@ network/
 | Capability | How ConNET Uses It |
 |-----------|-------------------|
 | **Email — Send** | Outbound outreach, smart replies, follow-ups, intro emails, briefings |
-| **Email — Receive** | Inbox polling, inbound classification, agent-to-agent communication |
+| **Email — Receive** | Inbox polling (`check inbox`), or real-time **webhooks** via `run_inkbox_gateway.py` + `connet_webhook_hook.py` |
 | **Email — Threading** | Follow-ups in same thread, conversation recall with full bodies |
 | **Vault** | Encrypted CRM storing contacts with warmth scores, outreach history, and follow-up schedules |
-| **Phone** | Daily briefing calls with TTS-generated scripts |
+| **Phone** | Daily briefing calls; optional **vendored gateway** answers live inbound calls (Inkbox STT/TTS + sample agent) |
 | **Identity** | Two separate agent identities for agent-to-agent networking demo |
 
 ---

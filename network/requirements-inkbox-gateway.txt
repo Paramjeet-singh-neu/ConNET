@@ -1,0 +1,13 @@
+# Extra dependencies for run_inkbox_gateway.py (vendored Inkbox sample server).
+# Install with: pip install -r requirements.txt -r requirements-inkbox-gateway.txt
+aiohttp>=3.13.4
+cryptography>=42.0.0
+fastapi>=0.115.12
+h2>=4.1.0
+httpx[http2]>=0.28.1
+hypercorn>=0.17.3
+pydantic>=2.11.4
+python-multipart>=0.0.20
+uvicorn[standard]>=0.34.3
+websocket-client>=1.6.0
+websockets>=15.0.1
